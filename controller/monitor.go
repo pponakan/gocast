@@ -384,3 +384,8 @@ func (m *MonitorMgr) Cleanup(app string, exit chan bool) {
 func (m *MonitorMgr) GetInfo() (*api.Peer, error) {
 	return m.ctrl.PeerInfo()
 }
+
+// GetPathInfo returns info about our BGP announcement state
+func (m *MonitorMgr) GetPathInfo() ([]api.Destination, error) {
+       return m.ctrl.PathInfo()
+}

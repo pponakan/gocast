@@ -32,6 +32,7 @@ func (s *Server) Serve(ctx context.Context) {
 	http.HandleFunc("/unregister", s.unregisterHandler)
 	http.HandleFunc("/info", s.infoHandler)
 	http.HandleFunc("/ping", s.pingHandler)
+	http.HandleFunc("/paths", s.pathsHandler)
 	srv := &http.Server{Addr: s.ListenAddr}
 	idleConnsClosed := make(chan struct{})
 	go func() {
@@ -104,4 +105,14 @@ func (s *Server) pingHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func (s *Server) pathsHandler(w http.ResponseWriter, r *http.Request) {
+	destinations, err := s.mon.GetPathInfo()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Internal error getting path info: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(destinations)
 }
