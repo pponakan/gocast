@@ -162,6 +162,19 @@ func (c *Controller) PeerInfo() (*api.Peer, error) {
 	return peer, nil
 }
 
+func (c *Controller) PathInfo() (destinations []api.Destination, err error) {
+	req := api.ListPathRequest{
+		TableType: api.TableType_GLOBAL,
+		Name: "",
+		Family: &api.Family{Afi: api.Family_AFI_IP, Safi: api.Family_SAFI_UNICAST},
+		SortType: api.ListPathRequest_PREFIX,
+	}
+	err = c.s.ListPath(context.Background(), &req, func(dst *api.Destination) {
+		destinations = append(destinations, *dst)
+	})
+	return
+}
+
 func (c *Controller) Shutdown() error {
 	if err := c.s.ShutdownPeer(context.Background(), &api.ShutdownPeerRequest{
 		Address: c.peerIP.String(),
