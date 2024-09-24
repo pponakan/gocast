@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -261,6 +262,11 @@ func (m *MonitorMgr) runMonitors(app *App) bool {
 			c, err := m.consul.healthCheck(app.Name)
 			if err != nil {
 				glog.Errorf("Failed to perform consul healthcheck for %s: %v", app.Name, err)
+				// Ignore if the error is due to consul timing-out.
+				if os.IsTimeout(err) {
+					glog.V(2).Info("Query to consul timed out. Skipping cleanup.")
+					c = true;
+				}
 			}
 			check = c
 		}

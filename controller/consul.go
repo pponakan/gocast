@@ -22,6 +22,7 @@ const (
 	allowStale           = "CONSUL_STALE"
 	matchTag             = "enable_gocast"
 	nodeURL              = "/catalog/node"
+	servicesURL          = "/agent/services"
 	remoteHealthCheckurl = "/health/checks"
 	localHealthCheckurl  = "/agent/checks"
 )
@@ -57,12 +58,18 @@ type ConsulMon struct {
 	client Clienter
 }
 
-type ConsulServiceData struct {
+/*type ConsulServiceData struct {
 	Services map[string]struct {
 		ID      string
 		Service string
 		Tags    []string
 	}
+}*/
+
+type ConsulServiceData map[string]struct {
+	ID      string
+	Service string
+	Tags    []string
 }
 
 func contains(inp []string, elem string) bool {
@@ -93,7 +100,7 @@ func (c *ConsulMon) queryServices() ([]*App, error) {
 	if os.Getenv(allowStale) == "true" {
 		stale = "stale"
 	}
-	addr := c.addr + fmt.Sprintf("%s/%s?%s", nodeURL, c.node, stale)
+	addr := c.addr + fmt.Sprintf("%s?%s", servicesURL, stale)
 	resp, err := c.client.Do(addr, "GET", nil)
 	if err != nil {
 		return apps, err
@@ -103,14 +110,14 @@ func (c *ConsulMon) queryServices() ([]*App, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&consulData); err != nil {
 		return apps, fmt.Errorf("Unable to decode consul data: %v", err)
 	}
-	glog.V(2).Infof("queryServices: Got %v services", len(consulData.Services))
+	glog.V(2).Infof("queryServices: Got %v services", len(consulData))
 	// When using stale queries to consul, a 0 service count indicates the query failed. Under
 	// normal operation atleast the nomad client service should be returned. We dont want to
 	// withdraw the route for any established VIPs.
-	if len(consulData.Services) == 0 {
+	if len(consulData) == 0 {
 		return apps, fmt.Errorf("queryServices returned 0. Skipping clean up of apps: %v", err)
 	}
-	for _, service := range consulData.Services {
+	for _, service := range consulData {
 		if !contains(service.Tags, matchTag) {
 			continue
 		}
